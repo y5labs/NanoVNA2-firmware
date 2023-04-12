@@ -129,10 +129,7 @@ void ui_process_keypad(UIEvent evt);
 static void menu_push_submenu(const menuitem_t *submenu);
 static int touch_pickup_marker(void);
 
-void
-touch_prepare_sense(void)
-{
-}
+void touch_prepare_sense(void) { }
 
 // Disable or enable ui_process_* callbacks in order to do synchronous event polling.
 // New uses of these functions are heavily discouraged.
@@ -157,9 +154,7 @@ UIEvent uiWaitEvent() {
 
 
 
-void
-touch_cal_exec(void)
-{
+void touch_cal_exec(void) {
   uint16_t x1, x2, y1, y2, t;
   UIEvent evt;
 
@@ -173,7 +168,7 @@ touch_cal_exec(void)
 
   do {
     evt = uiWaitEvent();
-    if(evt.isTouchPress())
+    if (evt.isTouchPress())
       UIHW::touchPosition(x1, y1);
   } while(!evt.isTouchRelease());
 
@@ -185,11 +180,11 @@ touch_cal_exec(void)
 
   do {
     evt = uiWaitEvent();
-     if(evt.isTouchPress())
+     if (evt.isTouchPress())
       UIHW::touchPosition(x2, y2);
   } while(!evt.isTouchRelease());
   // Need swap data if display flip
-  if(config.ui_options & UI_OPTIONS_FLIP){
+  if (config.ui_options & UI_OPTIONS_FLIP){
     t=x1;x1=x2;x2=t;
     t=y1;y1=y2;y2=t;
   }
@@ -203,9 +198,7 @@ touch_cal_exec(void)
   uiEnableProcessing();
 }
 
-void
-touch_draw_test(void)
-{
+void touch_draw_test(void) {
   UIEvent evt;
   int x0, y0;
   int x1, y1;
@@ -222,7 +215,7 @@ touch_draw_test(void)
   touch_position(&x0, &y0);
 
   while(true) {
-    if(!touch_position(&x1, &y1))
+    if (!touch_position(&x1, &y1))
       break;
     ili9341_line(x0, y0, x1, y1);
     x0 = x1;
@@ -234,14 +227,13 @@ touch_draw_test(void)
 }
 
 
-bool touch_position(int *x, int *y)
-{
+bool touch_position(int *x, int *y) {
   uint16_t touchX, touchY;
-  if(!UIHW::touchPosition(touchX, touchY))
+  if (!UIHW::touchPosition(touchX, touchY))
     return false;
   *x = (int(touchX) - config.touch_cal[0]) * 16 / config.touch_cal[2];
   *y = (int(touchY) - config.touch_cal[1]) * 16 / config.touch_cal[3];
-  if(config.ui_options & UI_OPTIONS_FLIP) {
+  if (config.ui_options & UI_OPTIONS_FLIP) {
     *x = LCD_WIDTH  - *x;
     *y = LCD_HEIGHT - *y;
   }
@@ -252,15 +244,28 @@ bool touch_position(int *x, int *y, UIEvent evt) {
   return touch_position(x, y);
 }
 
+typedef struct {
+  uint32_t data;
+} testdata_t;
 
-void
-show_version(void)
-{
+testdata_t testdata = {
+  .data = 1
+};
+
+void show_version(void) {
   int x = 5, y = 5;
   const char *fpu;
   uint32_t* deviceID = (uint32_t*)0x1FFFF7E8;
   char snStr[64];
   chsnprintf(snStr, sizeof(snStr), "SN: %08x-%08x-%08x\n", deviceID[0], deviceID[1], deviceID[2]);
+
+  const uint32_t test_area = SAVEAREA_BEGIN + 48*2048;
+
+  memcpy(&testdata, (properties_t*)test_area, sizeof(testdata_t));
+
+  char countStr[64];
+  chsnprintf(countStr, sizeof(countStr), "Count: %08u / %08u / %08u\n", testdata.data, board::USERFLASH_END, test_area);
+  testdata.data++;
 
   ili9341_set_foreground(DEFAULT_FG_COLOR);
   ili9341_set_background(DEFAULT_BG_COLOR);
@@ -278,16 +283,20 @@ show_version(void)
   ili9341_drawstring("Licensed under GPL. ", x, y += step);
   ili9341_drawstring("https://github.com/ttrftech/NanoVNA", x + 10, y += step);
   ili9341_drawstring("https://github.com/nanovna/NanoVNA-V2-firmware", x + 10, y += step);
+  ili9341_drawstring("https://github.com/y5labs/NanoVNA-V2-firmware", x + 10, y += step);
   ili9341_drawstring("Version: " GITVERSION, x, y += step);
   ili9341_drawstring("Build Time: " __DATE__ " - " __TIME__, x, y += step);
   y += 5;
   ili9341_drawstring("Compiler: " PORT_COMPILER_NAME, x, y += step);
   ili9341_drawstring("Port Info: " PORT_INFO, x, y += step);
   ili9341_drawstring("Board: " BOARD_NAME, x, y += step);
+  ili9341_drawstring(countStr, x, y += step);
+
+	flash_program_data(test_area, (uint8_t*)&testdata, sizeof(testdata));
 
   while (true) {
     UIEvent evt = uiWaitEvent();
-    if(evt.isTouchPress() || evt.isLeverClick())
+    if (evt.isTouchPress() || evt.isLeverClick())
       break;
   }
 
@@ -295,9 +304,7 @@ show_version(void)
 }
 
 
-void
-show_dmesg(void)
-{
+void show_dmesg(void) {
   int x = 5, y = 5;
   ili9341_set_foreground(DEFAULT_FG_COLOR);
   ili9341_set_background(DEFAULT_BG_COLOR);
@@ -315,29 +322,29 @@ show_dmesg(void)
   const char* lines[maxLines];
   int nextLineIndex = maxLines - 1;
   while(pos >= msg && pos < end) {
-    if((*pos) == '\n') {
+    if ((*pos) == '\n') {
       lines[nextLineIndex] = pos + 1;
       nextLineIndex--;
-      if(nextLineIndex < 0) break;
+      if (nextLineIndex < 0) break;
     }
     pos--;
   }
 
-  if(nextLineIndex >= 0) {
+  if (nextLineIndex >= 0) {
     lines[nextLineIndex] = msg;
     nextLineIndex--;
   }
 
   for(int i = nextLineIndex+1; i<maxLines; i++) {
     int len = (i < (maxLines-1)) ? (lines[i+1] - lines[i]) : (end - lines[i]);
-    if(len > 0) len--;
+    if (len > 0) len--;
     ili9341_drawstring(lines[i], len, x, y);
     y += 10;
   }
 
   while (true) {
     UIEvent evt = uiWaitEvent();
-    if(evt.isTouchPress() || evt.isLeverClick())
+    if (evt.isTouchPress() || evt.isLeverClick())
       break;
   }
 
@@ -359,9 +366,7 @@ void ui_mode_usb(void) {
 }
 
 
-void
-show_message(const char* title, const char* message, int fg, int bg)
-{
+void show_message(const char* title, const char* message, int fg, int bg) {
   int x = 5, y = 5;
   ili9341_set_foreground(fg);
   ili9341_set_background(bg);
@@ -373,9 +378,7 @@ show_message(const char* title, const char* message, int fg, int bg)
   ili9341_drawstring_size(message, x, y, 1);
 }
 
-void
-ui_enter_bootload(void)
-{
+void ui_enter_bootload(void) {
   uiDisableProcessing();
 
   int x = 5, y = 5;
@@ -429,8 +432,7 @@ void ui_cal_collected() {
 
 extern const menuitem_t menu_save[];
 
-static UI_FUNCTION_CALLBACK(menu_caldone_cb)
-{
+static UI_FUNCTION_CALLBACK(menu_caldone_cb) {
   (void)item;
   (void)data;
   cal_done();
@@ -439,8 +441,7 @@ static UI_FUNCTION_CALLBACK(menu_caldone_cb)
   menu_push_submenu(menu_save);
 }
 
-static UI_FUNCTION_ADV_CALLBACK(menu_cal2_acb)
-{
+static UI_FUNCTION_ADV_CALLBACK(menu_cal2_acb) {
   (void)data;
   if (b){
     if (item == 4) b->icon = (cal_status&CALSTAT_APPLY) ? BUTTON_ICON_CHECK : BUTTON_ICON_NOCHECK;
@@ -467,8 +468,7 @@ static UI_FUNCTION_ADV_CALLBACK(menu_cal2_acb)
   draw_cal_status();
 }
 
-static UI_FUNCTION_CALLBACK(menu_recall_cb)
-{
+static UI_FUNCTION_CALLBACK(menu_recall_cb) {
   if (caldata_recall(data) == 0) {
     menu_move_back(true);
     draw_cal_status();
@@ -480,8 +480,7 @@ static UI_FUNCTION_CALLBACK(menu_recall_cb)
   }
 }
 
-static UI_FUNCTION_CALLBACK(menu_config_cb)
-{
+static UI_FUNCTION_CALLBACK(menu_config_cb) {
   switch (item) {
   case 0:
       touch_cal_exec();
@@ -511,23 +510,20 @@ static UI_FUNCTION_CALLBACK(menu_config_cb)
   }
 }
 
-static UI_FUNCTION_CALLBACK(menu_config_save_cb)
-{
+static UI_FUNCTION_CALLBACK(menu_config_save_cb) {
   (void)item;
   (void)data;
   config_save();
   menu_move_back(true);
 }
 
-static UI_FUNCTION_CALLBACK(menu_bootload_cb)
-{
+static UI_FUNCTION_CALLBACK(menu_bootload_cb) {
   (void)item;
   (void)data;
   ui_enter_bootload();
 }
 
-static UI_FUNCTION_CALLBACK(menu_save_cb)
-{
+static UI_FUNCTION_CALLBACK(menu_save_cb) {
   (void)item;
   if (caldata_save(data) == 0) {
     menu_move_back(true);
@@ -540,9 +536,7 @@ static UI_FUNCTION_CALLBACK(menu_save_cb)
   }
 }
 
-static void
-choose_active_trace(void)
-{
+static void choose_active_trace(void) {
   int i;
   if (trace[uistat.current_trace].enabled)
     // do nothing
@@ -554,8 +548,7 @@ choose_active_trace(void)
     }
 }
 
-static UI_FUNCTION_ADV_CALLBACK(menu_trace_acb)
-{
+static UI_FUNCTION_ADV_CALLBACK(menu_trace_acb) {
   (void)item;
   if (b){
     if (trace[data].enabled){
@@ -583,8 +576,7 @@ static UI_FUNCTION_ADV_CALLBACK(menu_trace_acb)
   draw_menu();
 }
 
-static UI_FUNCTION_ADV_CALLBACK(menu_format_acb)
-{
+static UI_FUNCTION_ADV_CALLBACK(menu_format_acb) {
   (void)item;
   if (b){
     if (uistat.current_trace >=0 && trace[uistat.current_trace].type == data)
@@ -597,8 +589,7 @@ static UI_FUNCTION_ADV_CALLBACK(menu_format_acb)
   //redraw_all();
 }
 
-static UI_FUNCTION_ADV_CALLBACK(menu_channel_acb)
-{
+static UI_FUNCTION_ADV_CALLBACK(menu_channel_acb) {
   (void)item;
   if (b){
     if (uistat.current_trace >=0 && trace[uistat.current_trace].channel == data)
@@ -613,7 +604,7 @@ static UI_FUNCTION_ADV_CALLBACK(menu_transform_window_acb)
 {
   (void)item;
   // TODO
-  if(b){
+  if (b){
     b->icon = (domain_mode & TD_WINDOW) == data ? BUTTON_ICON_GROUP_CHECKED : BUTTON_ICON_GROUP;
     return;
   }
@@ -625,7 +616,7 @@ static UI_FUNCTION_ADV_CALLBACK(menu_transform_acb)
 {
   (void)item;
   (void)data;
-  if(b){
+  if (b){
     if (domain_mode & DOMAIN_TIME) b->icon = BUTTON_ICON_CHECK;
     return;
   }
@@ -637,7 +628,7 @@ static UI_FUNCTION_ADV_CALLBACK(menu_transform_acb)
 static UI_FUNCTION_ADV_CALLBACK(menu_transform_filter_acb)
 {
   (void)item;
-  if(b){
+  if (b){
     b->icon = (domain_mode & TD_FUNC) == data ? BUTTON_ICON_GROUP_CHECKED : BUTTON_ICON_GROUP;
     return;
   }
@@ -649,7 +640,7 @@ static UI_FUNCTION_ADV_CALLBACK(menu_transform_filter_acb)
 static UI_FUNCTION_ADV_CALLBACK(menu_avg_acb)
 {
   (void)item;
-  if(b) {
+  if (b) {
     if (current_props._avg == data)
       b->icon = BUTTON_ICON_CHECK;
     return;
@@ -663,7 +654,7 @@ static UI_FUNCTION_ADV_CALLBACK(menu_avg_acb)
 static UI_FUNCTION_ADV_CALLBACK(menu_power_acb)
 {
   (void)item;
-  if(b) {
+  if (b) {
     if (current_props._adf4350_txPower == data)
       b->icon = BUTTON_ICON_CHECK;
     return;
@@ -675,12 +666,12 @@ static UI_FUNCTION_ADV_CALLBACK(menu_power_acb)
 
 static UI_FUNCTION_ADV_CALLBACK(menu_display_acb)
 {
-  if(b){
+  if (b){
     b->icon = config.ui_options & UI_OPTIONS_FLIP ? BUTTON_ICON_CHECK : BUTTON_ICON_NOCHECK;
     return;
   }
   config.ui_options^= UI_OPTIONS_FLIP;
-  if(config.ui_options & UI_OPTIONS_FLIP)
+  if (config.ui_options & UI_OPTIONS_FLIP)
     ili9341_set_flip(true, true);
 
   else ili9341_set_flip(false, false);
@@ -1541,9 +1532,9 @@ menu_item_modify_attribute(const menuitem_t *menu, int item,
         *fg = 0xffff;
       }
   }
-  if(*bg == 0x0000 && ui_disabled)
+  if (*bg == 0x0000 && ui_disabled)
     *bg = 0x6666;
-  if(*fg == 0x0000 && ui_disabled)
+  if (*fg == 0x0000 && ui_disabled)
     *fg = 0x6666;
 }
 #endif
@@ -1664,7 +1655,7 @@ menu_apply_touch(UIEvent evt)
   const menuitem_t *menu = menu_stack[menu_current_level];
   int i;
 
-  if(!touch_position(&touch_x, &touch_y, evt))
+  if (!touch_position(&touch_x, &touch_y, evt))
     return;
   for (i = 0; i < MENU_BUTTON_MAX; i++) {
     if (menu[i].type == MT_NONE)
@@ -1818,12 +1809,12 @@ lever_move_marker(UIEvent evt)
     int step = evt.isTick() ? 3 : 1;
     if (evt.isJogLeft()) {
       am.index -= step;
-      if(am.index < 0)
+      if (am.index < 0)
         am.index = 0;
     }
     if (evt.isJogRight()) {
       am.index += step;
-      if(am.index >= current_props._sweep_points)
+      if (am.index >= current_props._sweep_points)
         am.index = current_props._sweep_points - 1;
     }
     am.frequency = frequencyAt(am.index);
@@ -1896,13 +1887,11 @@ lever_move_center(UIEvent evt)
 }
 
 
-static void
-ui_process_normal(UIEvent evt)
-{
+static void ui_process_normal(UIEvent evt) {
   if (evt.isLeverClick()) {
     ui_mode_menu();
   }
-  if(evt.isJog()) {
+  if (evt.isJog()) {
 #ifdef ENABLE_LEVER_MODES
     switch (uistat.lever_mode) {
       case LM_MARKER: lever_move_marker(evt);   break;
@@ -1914,11 +1903,11 @@ ui_process_normal(UIEvent evt)
     lever_move_marker(evt);
 #endif
   }
-  if(evt.isJogEnd()) {
+  if (evt.isJogEnd()) {
     if (active_marker != MARKER_INVALID)
       request_to_redraw_marker(active_marker);
   }
-  if(evt.isTouchPress()) {
+  if (evt.isTouchPress()) {
     if (touch_pickup_marker()) {
       return;
     }
@@ -1928,17 +1917,15 @@ ui_process_normal(UIEvent evt)
   }
 }
 
-static void
-ui_process_menu(UIEvent evt)
-{
+static void ui_process_menu(UIEvent evt) {
   if (evt.isLeverClick() || evt.isLeverLongPress()) {
-    if(selection < 0)
+    if (selection < 0)
       goto menuclose;
     menu_invoke(evt, selection);
     return;
   }
   if (evt.isJogRight()) {
-    if(menu_stack[menu_current_level][selection+1].type == MT_NONE)
+    if (menu_stack[menu_current_level][selection+1].type == MT_NONE)
       goto menuclose;
     selection++;
     draw_menu();
@@ -1946,12 +1933,12 @@ ui_process_menu(UIEvent evt)
   if (evt.isJogLeft()) {
     if (selection == 0)
       goto menuclose;
-    if(selection < 0)
+    if (selection < 0)
       return;
     selection--;
     draw_menu();
   }
-  if(evt.isTouchPress()) {
+  if (evt.isTouchPress()) {
     menu_apply_touch(evt);
   }
   return;
@@ -1959,9 +1946,7 @@ menuclose:
   ui_mode_normal();
 }
 
-static int
-keypad_click(int key)
-{
+static int keypad_click(int key) {
   int c = keypads[key].c;
   if ((c >= KP_X1 && c <= KP_G) || c == KP_N || c == KP_P) {
     float scale = 1;
@@ -2035,13 +2020,11 @@ keypad_click(int key)
   return KP_CONTINUE;
 }
 
-static int
-keypad_apply_touch(UIEvent evt)
-{
+static int keypad_apply_touch(UIEvent evt) {
   int touch_x, touch_y;
   int i = 0;
 
-  if(!touch_position(&touch_x, &touch_y, evt))
+  if (!touch_position(&touch_x, &touch_y, evt))
     return -1;
 
   while (keypads[i].c != KP_NONE) {
@@ -2068,9 +2051,7 @@ keypad_apply_touch(UIEvent evt)
   return -1;
 }
 
-void
-ui_process_keypad(UIEvent evt)
-{
+void ui_process_keypad(UIEvent evt) {
   if (evt.isJogLeft()) {
     if (--selection < 0)
       selection = keypads_last_index;
@@ -2114,14 +2095,12 @@ return_to_normal:
 }
 
 
-static void
-drag_marker(int t, int m)
-{
+static void drag_marker(int t, int m) {
   /* wait touch release */
   while(true) {
     int touch_x, touch_y;
     int index;
-    if(!touch_position(&touch_x, &touch_y))
+    if (!touch_position(&touch_x, &touch_y))
       break;
     touch_x -= OFFSETX;
     touch_y -= OFFSETY;
@@ -2134,11 +2113,9 @@ drag_marker(int t, int m)
   }
 }
 
-static int
-touch_pickup_marker(void)
-{
+static int touch_pickup_marker(void) {
   int touch_x, touch_y;
-  if(!touch_position(&touch_x, &touch_y))
+  if (!touch_position(&touch_x, &touch_y))
     return FALSE;
   touch_x -= OFFSETX;
   touch_y -= OFFSETY;
@@ -2176,27 +2153,25 @@ touch_pickup_marker(void)
   return TRUE;
 }
 
-void
-ui_process(UIEvent evt)
-{
+void ui_process(UIEvent evt) {
   // if the display is flipped, flip jog left/right too
-  if(config.ui_options & UI_OPTIONS_FLIP) {
-    if(evt.button == UIEventButtons::LeverLeft)
+  if (config.ui_options & UI_OPTIONS_FLIP) {
+    if (evt.button == UIEventButtons::LeverLeft)
       evt.button = UIEventButtons::LeverRight;
-    else if(evt.button == UIEventButtons::LeverRight)
+    else if (evt.button == UIEventButtons::LeverRight)
       evt.button = UIEventButtons::LeverLeft;
   }
 
-  if(uiEventsEnabled)
+  if (uiEventsEnabled)
     lastUIEvent = {};
   else {
     lastUIEvent = evt;
     return;
   }
 
-  if(ui_disabled) return;
+  if (ui_disabled) return;
 
-//  if(evt.isTouchPress())
+//  if (evt.isTouchPress())
 //    awd_count++;
 
   switch (ui_mode) {
@@ -2210,7 +2185,7 @@ ui_process(UIEvent evt)
     ui_process_keypad(evt);
     break;
   case UI_USB_MODE:
-    if(evt.isLeverLongPress()) {
+    if (evt.isLeverLongPress()) {
       UIActions::reconnectUSB();
     }
     break;

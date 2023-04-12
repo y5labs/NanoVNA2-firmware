@@ -1719,6 +1719,7 @@ int main(void) {
 		return 0;
 	}
 
+	show_version();
 
 	bool lastUSBDataMode = false;
 	while(true) {
