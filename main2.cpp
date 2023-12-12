@@ -148,6 +148,14 @@ static void errorBlink(int cnt) {
 	}
 }
 
+void led_toggle(mculib::Pad led_pin) {
+	if (digitalRead(led_pin) == LOW) {
+		digitalWrite(led_pin, HIGH);
+	} else {
+		digitalWrite(led_pin, LOW);
+	}
+}
+
 #define errnoToPtr(x) ((void*)(uint32_t)(-x))
 
 typedef void (*emitDataPoint_t)(int freqIndex, freqHz_t freqHz, VNAObservation v, const complexf* ecal, bool clipped);
@@ -735,6 +743,10 @@ static void cmdReadFIFO(int address, int nValues) {
 		}
 
 		usbDataPoint& usbDP = usbTxQueue[rdRPos];
+		if (usbDP.freqIndex == 0) {
+			led_toggle(led2);		
+		}
+
 		if(usbDP.freqIndex < 0 || usbDP.freqIndex >= USB_POINTS_MAX)
 			continue;
 
@@ -1423,16 +1435,19 @@ cal_interpolate(void)
   redraw_request |= REDRAW_CAL_STATUS;
 }
 
-
 // consume all items in the values fifo and update the "measured" array.
 static bool processDataPoint() {
 	int rdRPos = usbTxQueueRPos;
 	int rdWPos = usbTxQueueWPos;
 	__sync_synchronize();
-
+	
 	while(rdRPos != rdWPos) {
 		usbDataPoint& usbDP = usbTxQueue[rdRPos];
 		int freqIndex = usbDP.freqIndex;
+
+		if (freqIndex == 0) {
+			led_toggle(led2);			
+		}
 		
 		/*VNAObservation& value = usbDP.value;
 		auto refl = value[0]/value[1];
