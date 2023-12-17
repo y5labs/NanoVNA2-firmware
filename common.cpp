@@ -18,8 +18,8 @@ static const marker_t def_markers[MARKERS_MAX] = {
 
 void properties_t::setFieldsToDefault() {
 	magic = CONFIG_MAGIC;
-	_frequency0   = 100000000;    // start = 100MHz
-	_frequency1   = 900000000;    // end   = 900MHz
+	_frequency0   = 500000000;    // start = 100MHz
+	_frequency1   = 1500000000;    // end   = 900MHz
 	_sweep_points = 101;
 	_cal_status   = 0;
 	_electrical_delay = 0.0;
