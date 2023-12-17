@@ -8,8 +8,8 @@
 static const trace_t def_trace[TRACES_MAX] = {//enable, type, channel, reserved, scale, refpos
     { 1, TRC_LOGMAG, 0, 0, 1.0, 7.0 },
     { 1, TRC_LOGMAG, 1, 0, 1.0, 7.0 },
-    { 1, TRC_SMITH,  0, 1, 1.0, 0.0 },
-    { 1, TRC_PHASE,  0, 0, 1.0, 4.0 }
+    { 0, TRC_SMITH,  0, 1, 1.0, 0.0 },
+    { 0, TRC_PHASE,  0, 0, 1.0, 4.0 }
 };
 
 static const marker_t def_markers[MARKERS_MAX] = {
@@ -18,9 +18,13 @@ static const marker_t def_markers[MARKERS_MAX] = {
 
 void properties_t::setFieldsToDefault() {
 	magic = CONFIG_MAGIC;
-	_frequency0   = 500000000;    // start = 100MHz
+	// _frequency0   = 100000000;    // start = 100MHz
+	// _frequency1   = 900000000;    // end   = 900MHz
+	// _sweep_points = 101;
+  _frequency0   = 500000000;    // start = 100MHz
 	_frequency1   = 1500000000;    // end   = 900MHz
-	_sweep_points = 101;
+	_sweep_points = 51;
+
 	_cal_status   = 0;
 	_electrical_delay = 0.0;
 	_velocity_factor =  0.7;
