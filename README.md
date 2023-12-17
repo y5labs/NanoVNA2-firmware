@@ -2,7 +2,7 @@ in `./libopencm3/Makefile` make sure you fix bad slash:
 ```
 -SRCLIBDIR:= $(subst $(space),\$(space),$(realpath lib))
 +SRCLIBDIR:= $(subst $(space),/$(space),$(realpath lib))
-``
+```
 
 ## NanoVNA V2 Firmware
 
